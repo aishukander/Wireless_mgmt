@@ -1,0 +1,21 @@
+{
+    "name": "Wireless_mgmt",
+    "version": "0.1.0",
+    "description": "用於管理esp32 wireless連接的函式庫",
+    "keywords": "wifi, mqtt, wireless, esp32, communication",
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/aishukander/Wireless_mgmt.git"
+    },
+    "authors": [
+      {
+        "name": "aishukander",
+        "email": "aishukander@gmail.com",
+        "url": "https://github.com/aishukander",
+        "maintainer": true
+      }
+    ],
+    "dependencies": {
+      "knolleary/PubSubClient": "^2.8"
+    }
+  }
