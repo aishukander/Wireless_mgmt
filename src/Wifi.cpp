@@ -269,10 +269,6 @@ byte Wifi_checkStatus(bool silentMode) {
 // WiFi Access Point Mode
 // ==========================================
 
-#include "Wireless_mgmt.h"
-#include "Arduino.h"
-#include <WiFi.h>
-
 /**
  * 設置並啟動WiFi AP模式
  * @param ssid AP的SSID名稱

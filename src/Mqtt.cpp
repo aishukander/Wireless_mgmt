@@ -17,32 +17,41 @@ void (*_mqttCallback)(char*, byte*, unsigned int) = NULL;
  * @param username MQTT使用者名稱，可為NULL
  * @param password MQTT密碼，可為NULL
  */
-void Mqtt_setup(const char* server, int port) {
+void Mqtt_setup(const char* server, int port, bool silentMode) {
   mqttClient.setServer(server, port);
   
   const char* separatorLine = "--------------------------------";
-  Serial.println(separatorLine);
-  Serial.println("MQTT 設定:");
-  Serial.print("- 伺服器: ");
-  Serial.println(server);
-  Serial.print("- 埠: ");
-  Serial.println(port);
-
+  if (!silentMode) {
+    Serial.println(separatorLine);
+    Serial.println("MQTT 設定:");
+    Serial.print("- 伺服器: ");
+    Serial.println(server);
+    Serial.print("- 埠: ");
+    Serial.println(port);
+  }
+  
   if (_mqttCallback != NULL) {
     mqttClient.setCallback(_mqttCallback);
-    Serial.println("- 回調函數已設定");
+    if (!silentMode) {
+      Serial.println("- 回調函數已設定");
+    }
   }
-  Serial.println(separatorLine);
+
+  if (!silentMode) {
+    Serial.println(separatorLine);
+  }
 }
 
 /**
  * 設定MQTT訊息回調函數
  * @param callback 回調函數指針(void)(char*, byte*, unsigned int)
  */
-void Mqtt_setCallback(void (*callback)(char*, byte*, unsigned int)) {
+void Mqtt_setCallback(void (*callback)(char*, byte*, unsigned int), bool silentMode) {
   _mqttCallback = callback;
   mqttClient.setCallback(callback);
-  Serial.println("MQTT 回調函數已設定");
+  if (!silentMode) {
+    Serial.println("MQTT回調函數已設定");
+  }
 }
 
 /**
@@ -57,9 +66,11 @@ void Mqtt_setCallback(void (*callback)(char*, byte*, unsigned int)) {
  * @return 是否成功連接
  */
 bool Mqtt_connect(const char* clientId, const char* username, const char* password, 
-                 const char* willTopic, const char* willMessage, bool willRetain, bool cleanSession) {
-  Serial.println("--------------------------------");
-  Serial.print("連接到MQTT伺服器... ");
+                 const char* willTopic, const char* willMessage, bool willRetain, bool cleanSession, bool silentMode) {
+  if (!silentMode) {
+    Serial.println("--------------------------------");
+    Serial.print("連接到MQTT伺服器... ");
+  }
   
   bool success = false;
   
@@ -69,21 +80,23 @@ bool Mqtt_connect(const char* clientId, const char* username, const char* passwo
     success = mqttClient.connect(clientId, username, password);
   }
   
-  if (success) {
-    Serial.println("成功!");
-    Serial.print("- 客戶端ID: ");
-    Serial.println(clientId);
-    if (username != NULL) {
-      Serial.print("- 使用者: ");
-      Serial.println(username);
+  if (!silentMode) {
+    if (success) {
+      Serial.println("成功!");
+      Serial.print("- 客戶端ID: ");
+      Serial.println(clientId);
+      if (username != NULL) {
+        Serial.print("- 使用者: ");
+        Serial.println(username);
+      }
+    } else {
+      Serial.print("失敗! 錯誤碼: ");
+      Serial.println(mqttClient.state());
+      Serial.println("嘗試重新連接...");
     }
-  } else {
-    Serial.print("失敗! 錯誤碼: ");
-    Serial.println(mqttClient.state());
-    Serial.println("嘗試重新連接...");
+    Serial.println("--------------------------------");
   }
-  Serial.println("--------------------------------");
-  
+
   return success;
 }
 
@@ -94,22 +107,26 @@ bool Mqtt_connect(const char* clientId, const char* username, const char* passwo
  * @param retain 是否保留訊息
  * @return 是否成功發布
  */
-bool Mqtt_publish(const char* topic, const char* payload, bool retain) {
+bool Mqtt_publish(const char* topic, const char* payload, bool retain, bool silentMode) {
   if (!mqttClient.connected()) {
-    Serial.println("MQTT未連接，無法發布訊息");
+    if (!silentMode) {
+      Serial.println("MQTT未連接，無法發布訊息");
+    }
     return false;
   }
   
   bool success = mqttClient.publish(topic, payload, retain);
   
-  if (success) {
-    Serial.print("訊息已發布至主題: ");
-    Serial.println(topic);
-  } else {
-    Serial.print("發布訊息失敗! 主題: ");
-    Serial.println(topic);
+  if (!silentMode) {
+    if (success) {
+      Serial.print("訊息已發布至主題: ");
+      Serial.println(topic);
+    } else {
+      Serial.print("發布訊息失敗! 主題: ");
+      Serial.println(topic);
+    }
   }
-  
+
   return success;
 }
 
@@ -119,20 +136,24 @@ bool Mqtt_publish(const char* topic, const char* payload, bool retain) {
  * @param qos 服務品質 (0, 1, 2)
  * @return 是否成功訂閱
  */
-bool Mqtt_subscribe(const char* topic, int qos) {
+bool Mqtt_subscribe(const char* topic, int qos, bool silentMode) {
   if (!mqttClient.connected()) {
-    Serial.println("MQTT未連接，無法訂閱主題");
+    if (!silentMode) {
+      Serial.println("MQTT未連接，無法訂閱主題");
+    }
     return false;
   }
   
   bool success = mqttClient.subscribe(topic, qos);
-  
-  if (success) {
-    Serial.print("已訂閱主題: ");
-    Serial.println(topic);
-  } else {
-    Serial.print("訂閱主題失敗: ");
-    Serial.println(topic);
+
+  if (!silentMode) {
+    if (success) {
+      Serial.print("已訂閱主題: ");
+      Serial.println(topic);
+    } else {
+      Serial.print("訂閱主題失敗: ");
+      Serial.println(topic);
+    }
   }
   
   return success;
@@ -143,20 +164,24 @@ bool Mqtt_subscribe(const char* topic, int qos) {
  * @param topic 主題
  * @return 是否成功取消訂閱
  */
-bool Mqtt_unsubscribe(const char* topic) {
+bool Mqtt_unsubscribe(const char* topic, bool silentMode) {
   if (!mqttClient.connected()) {
-    Serial.println("MQTT未連接，無法取消訂閱");
+    if (!silentMode) {
+      Serial.println("MQTT未連接，無法取消訂閱");
+    }
     return false;
   }
   
   bool success = mqttClient.unsubscribe(topic);
-  
-  if (success) {
-    Serial.print("已取消訂閱主題: ");
-    Serial.println(topic);
-  } else {
-    Serial.print("取消訂閱失敗: ");
-    Serial.println(topic);
+
+  if (!silentMode) {
+    if (success) {
+      Serial.print("已取消訂閱主題: ");
+      Serial.println(topic);
+    } else {
+      Serial.print("取消訂閱失敗: ");
+      Serial.println(topic);
+    }
   }
   
   return success;
@@ -197,10 +222,14 @@ bool Mqtt_loop() {
 /**
  * 斷開MQTT連線
  */
-void Mqtt_disconnect() {
-  Serial.println("--------------------------------");
-  Serial.println("斷開MQTT連線...");
+void Mqtt_disconnect(bool silentMode) {
+  if (!silentMode) {
+    Serial.println("--------------------------------");
+    Serial.print("斷開MQTT連線... ");
+  }
   mqttClient.disconnect();
-  Serial.println("已斷開MQTT連線");
-  Serial.println("--------------------------------");
+  if (!silentMode) {
+    Serial.println("已斷開MQTT連線");
+    Serial.println("--------------------------------");
+  }
 }
