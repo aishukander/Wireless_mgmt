@@ -4,6 +4,10 @@
 #include <Arduino.h>
 #include <IPAddress.h>
 #include <WiFi.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 
 // ==========================================
 // WiFi Client Mode
@@ -61,5 +65,31 @@ void BT_setCallback(void (*callback)(String), bool silentMode = false);
 void BT_loop();
 bool BT_sendMessage(const String &message, bool ln = true, bool silentMode = false);
 bool BT_checkStatus();
+
+// ==========================================
+// Bluetooth Low Energy
+// ==========================================
+
+// 藍牙回調函式指針類型
+typedef void (*BLECallbackFunction)(String);
+
+// BLE 服務和特徵 UUID
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+
+// BLE 初始化
+void BLE_setup(const char* bleName, bool silentMode = false);
+
+// 設定接收訊息回調函式
+void BLE_setCallback(BLECallbackFunction callback, bool silentMode = false);
+
+// BLE 主迴圈處理
+void BLE_loop();
+
+// 發送訊息
+bool BLE_sendMessage(const String &message, bool ln = true, bool silentMode = false);
+
+// 檢查連接狀態
+bool BLE_checkStatus();
 
 #endif
