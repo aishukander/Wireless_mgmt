@@ -61,6 +61,11 @@ void Mqtt_disconnect(bool silentMode = false);
 // ==========================================
 
 void BT_setup(const char* btName = "ESP32_BT", bool silentMode = false);
+bool BT_master_connect(
+    const String &name, uint32_t scanDuration = 5,
+    bool partialMatch = false, int maxAttempts = 1,
+    bool silentMode = false
+);
 void BT_setCallback(void (*callback)(String), bool silentMode = false);
 void BT_loop();
 bool BT_sendMessage(const String &message, bool ln = true, bool silentMode = false);

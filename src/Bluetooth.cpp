@@ -32,6 +32,132 @@ void BT_setup(const char* btName, bool silentMode) {
 }
 
 /**
+ * 掃描並連接指定名稱的藍牙設備(一步到位)
+ * @param name 要連接的設備名稱
+ * @param scanDuration 掃描時間(秒)
+ * @param partialMatch 是否允許部分名稱匹配
+ * @param maxAttempts 最大嘗試次數
+ * @param silentMode 是否安靜模式
+ * @return 是否成功連接
+ */
+bool BT_master_connect(const String &name, uint32_t scanDuration, bool partialMatch, int maxAttempts, bool silentMode) {
+  for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (!silentMode && maxAttempts > 1) {
+      Serial.print("嘗試 ");
+      Serial.print(attempt);
+      Serial.print("/");
+      Serial.print(maxAttempts);
+      Serial.println("...");
+    }
+    
+    // 開始掃描
+    if (!silentMode) {
+      Serial.println("--------------------------------");
+      Serial.println("開始藍牙掃描...");
+    }
+    
+    // 清空之前掃描結果
+    bool foundTargetDevice = false;
+    String targetAddress = "";
+    
+    // 啟動掃描
+    bool scanStarted = SerialBT.discoverAsync([&](BTAdvertisedDevice* device) {
+      // 檢查設備名稱是否匹配
+      String deviceName = device->getName().c_str();
+      bool nameMatches = false;
+      
+      if (deviceName.length() > 0) {
+        if (partialMatch) {
+          nameMatches = (deviceName.indexOf(name) >= 0);
+        } else {
+          nameMatches = deviceName.equals(name);
+        }
+      }
+      
+      // 找到匹配設備
+      if (nameMatches) {
+        foundTargetDevice = true;
+        targetAddress = device->getAddress().toString().c_str();
+        
+        if (!silentMode) {
+          Serial.print("找到目標設備: ");
+          Serial.print(deviceName);
+          Serial.print(" (");
+          Serial.print(targetAddress);
+          Serial.print("), RSSI: ");
+          Serial.println(device->getRSSI());
+        }
+      } else if (!silentMode) {
+        Serial.print("發現設備: ");
+        Serial.print(deviceName.length() > 0 ? deviceName : "(無名稱)");
+        Serial.print(" (");
+        Serial.print(device->getAddress().toString().c_str());
+        Serial.println(")");
+      }
+    });
+    
+    if (!scanStarted) {
+      if (!silentMode) Serial.println("啟動掃描失敗");
+      return false;
+    }
+    
+    // 等待掃描結束
+    delay(scanDuration * 1000);
+    SerialBT.discoverAsyncStop();
+    
+    if (!silentMode) {
+      Serial.println("藍牙掃描已停止");
+    }
+    
+    // 如果找到目標設備，嘗試連接
+    if (foundTargetDevice) {
+      if (!silentMode) {
+        Serial.println("--------------------------------");
+        Serial.print("正在連接到設備: ");
+        Serial.print(name);
+        Serial.print(" (");
+        Serial.print(targetAddress);
+        Serial.println(")");
+      }
+      
+      bool connected = SerialBT.connect(targetAddress.c_str());
+      
+      if (connected) {
+        if (!silentMode) {
+          Serial.println("連接成功!");
+          Serial.println("--------------------------------");
+        }
+        return true;
+      } else if (!silentMode) {
+        Serial.println("連接失敗");
+        Serial.println("--------------------------------");
+      }
+    } else if (!silentMode) {
+      Serial.print("找不到名稱");
+      Serial.print(partialMatch ? "包含" : "為");
+      Serial.print(" '");
+      Serial.print(name);
+      Serial.println("' 的設備");
+    }
+    
+    // 如果不是最後一次嘗試，則等待一段時間
+    if (attempt < maxAttempts) {
+      delay(1000);  // 等待1秒後再試
+    }
+  }
+  
+  if (!silentMode && maxAttempts > 1) {
+    Serial.print("在 ");
+    Serial.print(maxAttempts);
+    Serial.print(" 次嘗試後無法連接到設備 '");
+    Serial.print(name);
+    Serial.println("'");
+  }
+  
+  return false;
+}
+
+/**
  * 設定藍牙訊息回調函式
  * @param callback 回調函式指針 void(String)
  */
